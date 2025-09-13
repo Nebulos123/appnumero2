@@ -234,36 +234,36 @@
         
         <div id="main-game">
             <p class="text-center text-lg text-gray-600">
-                Arrastra cada imagen a la tarjeta de la emoci�n que creas que representa.
+                Arrastra cada imagen a la tarjeta de la emoción que creas que representa.
             </p>
 
             <div id="game-board">
                 <div id="happiness" class="emotion-card happiness dropzone" data-emotion="felicidad">
-                    <span class="text-4xl mb-2">??</span>
+                    <span class="text-4xl mb-2">😊</span>
                     Felicidad
                 </div>
                 <div id="sadness" class="emotion-card sadness dropzone" data-emotion="tristeza">
-                    <span class="text-4xl mb-2">??</span>
+                    <span class="text-4xl mb-2">😔</span>
                     Tristeza
                 </div>
                 <div id="anger" class="emotion-card anger dropzone" data-emotion="enojo">
-                    <span class="text-4xl mb-2">??</span>
+                    <span class="text-4xl mb-2">😡</span>
                     Enojo
                 </div>
                 <div id="surprise" class="emotion-card surprise dropzone" data-emotion="sorpresa">
-                    <span class="text-4xl mb-2">??</span>
+                    <span class="text-4xl mb-2">😮</span>
                     Sorpresa
                 </div>
             </div>
 
             <div id="items-container">
-                <!-- Las im�genes se generar�n aqu� con JavaScript -->
+                <!-- Las imágenes se generarán aquí con JavaScript -->
             </div>
         </div>
 
         <div id="bonus-game" class="hidden">
-            <h2 class="text-2xl font-bold text-center text-blue-800">�Bonus de Memoria!</h2>
-            <p class="text-center text-gray-600 mb-4">Encuentra los pares de emociones id�nticas.</p>
+            <h2 class="text-2xl font-bold text-center text-blue-800">¡Bonus de Memoria!</h2>
+            <p class="text-center text-gray-600 mb-4">Encuentra los pares de emociones idénticas.</p>
             <div id="memory-grid"></div>
         </div>
     </div>
@@ -288,10 +288,12 @@
         let correctCount = 0;
 
         const emotionData = [
-            { name: 'felicidad', image: 'https://placehold.co/120x120/a8e063/ffffff?text=Felicidad', icon: '??' },
-            { name: 'tristeza', image: 'https://placehold.co/120x120/e84a5f/ffffff?text=Tristeza', icon: '??' },
-            { name: 'enojo', image: 'https://placehold.co/120x120/ff8c42/ffffff?text=Enojo', icon: '??' },
-            { name: 'sorpresa', image: 'https://placehold.co/120x120/38a7d3/ffffff?text=Sorpresa', icon: '??' }
+            // Reemplaza las siguientes URLs con tus enlaces de imágenes de GitHub.
+            // Para obtener el enlace, haz clic en el botón "Raw" de tu imagen en GitHub.
+            { name: 'felicidad', image: 'https://raw.githubusercontent.com/Nebulos123/appnumero2/main/felicidad.png', icon: '😊' },
+            { name: 'tristeza', image: 'https://raw.githubusercontent.com/Nebulos123/appnumero2/main/tristeza.png', icon: '😔' },
+            { name: 'enojo', image: 'https://raw.githubusercontent.com/Nebulos123/appnumero2/main/enojo.png', icon: '😡' },
+            { name: 'sorpresa', image: 'https://raw.githubusercontent.com/Nebulos123/appnumero2/main/sorpresa.png', icon: '😮' }
         ];
         
         function shuffle(array) {
@@ -326,7 +328,7 @@
             dropzones.forEach(zone => {
                 zone.classList.remove('correct');
                 zone.style.transform = 'rotateX(15deg) rotateY(5deg) translateZ(0)';
-                zone.innerHTML = `<span class="text-4xl mb-2">${zone.dataset.emotion === 'felicidad' ? '??' : zone.dataset.emotion === 'tristeza' ? '??' : zone.dataset.emotion === 'enojo' ? '??' : '??'}</span> ${zone.dataset.emotion.charAt(0).toUpperCase() + zone.dataset.emotion.slice(1)}`;
+                zone.innerHTML = `<span class="text-4xl mb-2">${zone.dataset.emotion === 'felicidad' ? '😊' : zone.dataset.emotion === 'tristeza' ? '😔' : zone.dataset.emotion === 'enojo' ? '😡' : '😮'}</span> ${zone.dataset.emotion.charAt(0).toUpperCase() + zone.dataset.emotion.slice(1)}`;
             });
             renderItems();
         }
@@ -361,8 +363,8 @@
                     correctCount++;
                     if (correctCount === emotionData.length) {
                         setTimeout(() => showMessage(
-                            '�Felicidades!',
-                            '�Has clasificado todas las emociones correctamente!',
+                            '¡Felicidades!',
+                            '¡Has clasificado todas las emociones correctamente!',
                             'Jugar Bonus de Memoria',
                             startBonusGame
                         ), 500);
@@ -432,8 +434,8 @@
             resetBoard();
             if (matchesFound === emotionData.length) {
                 setTimeout(() => showMessage(
-                    '�Lo lograste!',
-                    '�Completaste el bonus de memoria!',
+                    '¡Lo lograste!',
+                    '¡Completaste el bonus de memoria!',
                     'Jugar de Nuevo',
                     () => {
                         bonusGameDiv.style.display = 'none';
