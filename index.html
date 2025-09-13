@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clasificador de Emociones 3D</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;700&display=swap');
+        
+        :root {
+            --color-happiness: #9fe2bf;
+            --color-sadness: #c9e3f1;
+            --color-anger: #f19483;
+            --color-surprise: #f8e58c;
+            --color-text: #374151;
+            --color-primary: #526fec;
+            --color-secondary: #fecb89;
+        }
+
+        body {
+            font-family: 'Fredoka', sans-serif;
+            color: var(--color-text);
+            background: linear-gradient(45deg, #f8c0c0, #c8e8f8, #c6e0c6);
+            background-size: 400% 400%;
+            animation: gradient-animation 15s ease infinite;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 24px;
+            overflow: hidden;
+        }
+
+        @keyframes gradient-animation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            width: 100%;
+            max-width: 1000px;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 32px;
+            border-radius: 2rem;
+            box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(10px);
+            perspective: 1000px;
+        }
+
+        h1 {
+            color: var(--color-primary);
+            text-align: center;
+            font-size: 3rem;
+            font-weight: 700;
+            text-shadow: 2px 2px var(--color-secondary);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        #main-game, #bonus-game {
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+        }
+        
+        #game-board {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+            justify-content: center;
+            align-items: center;
+            transform-style: preserve-3d;
+            position: relative;
+        }
+        @media (min-width: 768px) {
+            #game-board {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+        .emotion-card {
+            padding: 1.5rem;
+            border-radius: 1rem;
+            text-align: center;
+            font-weight: 700;
+            cursor: default;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            transform: rotateX(15deg) rotateY(5deg) translateZ(0);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .emotion-card.happiness { background-color: var(--color-happiness); border: 4px dashed #73d191; }
+        .emotion-card.sadness { background-color: var(--color-sadness); border: 4px dashed #82c4e3; }
+        .emotion-card.anger { background-color: var(--color-anger); border: 4px dashed #e36a5c; }
+        .emotion-card.surprise { background-color: var(--color-surprise); border: 4px dashed #e3c96a; }
+
+        .emotion-card.hovered {
+            transform: rotateX(0deg) rotateY(0deg) translateZ(20px) scale(1.05);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+        .emotion-card.correct {
+            transform: scale(1.1);
+            animation: pop-in 0.5s ease-out;
+        }
+        @keyframes pop-in {
+            0% { transform: scale(0.5); opacity: 0; }
+            80% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); }
+        }
+
+        .draggable {
+            cursor: grab;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: contain;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+            transition: transform 0.3s ease-out;
+            animation: float 3s ease-in-out infinite;
+        }
+        .draggable:active { cursor: grabbing; transform: scale(1.1) rotate(15deg); }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        #items-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background-color: rgba(255, 255, 255, 0.6);
+            border-radius: 1rem;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        .message-box {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            z-index: 100;
+            display: none;
+            animation: fadeIn 0.5s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+            to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+        .message-box button {
+            margin-top: 1rem;
+            background-color: var(--color-primary);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .message-box button:hover {
+            background-color: #4338ca;
+        }
+
+        /* BONUS GAME STYLES */
+        #bonus-game {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+        }
+        #memory-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-top: 24px;
+        }
+        .memory-card {
+            width: 100px;
+            height: 100px;
+            background-color: var(--color-primary);
+            border-radius: 8px;
+            cursor: pointer;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.5s ease-in-out;
+        }
+        .memory-card.flipped {
+            transform: rotateY(180deg);
+        }
+        .memory-card .face {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            backface-visibility: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3rem;
+            border-radius: 8px;
+        }
+        .memory-card .front {
+            background-color: var(--color-primary);
+        }
+        .memory-card .back {
+            background-color: white;
+            transform: rotateY(180deg);
+        }
+        .memory-card.matched {
+            pointer-events: none; /* Deshabilita clics en cartas emparejadas */
+            opacity: 0.8;
+        }
+        .memory-card.matched .back {
+            animation: pulse 1s infinite;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>El Clasificador de Emociones</h1>
+        
+        <div id="main-game">
+            <p class="text-center text-lg text-gray-600">
+                Arrastra cada imagen a la tarjeta de la emoción que creas que representa.
+            </p>
+
+            <div id="game-board">
+                <div id="happiness" class="emotion-card happiness dropzone" data-emotion="felicidad">
+                    <span class="text-4xl mb-2">??</span>
+                    Felicidad
+                </div>
+                <div id="sadness" class="emotion-card sadness dropzone" data-emotion="tristeza">
+                    <span class="text-4xl mb-2">??</span>
+                    Tristeza
+                </div>
+                <div id="anger" class="emotion-card anger dropzone" data-emotion="enojo">
+                    <span class="text-4xl mb-2">??</span>
+                    Enojo
+                </div>
+                <div id="surprise" class="emotion-card surprise dropzone" data-emotion="sorpresa">
+                    <span class="text-4xl mb-2">??</span>
+                    Sorpresa
+                </div>
+            </div>
+
+            <div id="items-container">
+                <!-- Las imágenes se generarán aquí con JavaScript -->
+            </div>
+        </div>
+
+        <div id="bonus-game" class="hidden">
+            <h2 class="text-2xl font-bold text-center text-blue-800">¡Bonus de Memoria!</h2>
+            <p class="text-center text-gray-600 mb-4">Encuentra los pares de emociones idénticas.</p>
+            <div id="memory-grid"></div>
+        </div>
+    </div>
+    
+    <div class="text-center text-xs text-gray-400 mt-4">
+        Power By Horacio Oviedo 2025 todos los derechos reservados
+    </div>
+
+    <div id="message-box" class="message-box hidden">
+        <h2 class="text-2xl font-bold text-blue-800"></h2>
+        <p class="mt-2 text-gray-600"></p>
+        <button id="message-button" onclick=""></button>
+    </div>
+
+    <script>
+        const mainGameDiv = document.getElementById('main-game');
+        const bonusGameDiv = document.getElementById('bonus-game');
+        const itemsContainer = document.getElementById('items-container');
+        const dropzones = document.querySelectorAll('.dropzone');
+        const messageBox = document.getElementById('message-box');
+        const messageButton = document.getElementById('message-button');
+        let correctCount = 0;
+
+        const emotionData = [
+            { name: 'felicidad', image: 'https://placehold.co/120x120/a8e063/ffffff?text=Felicidad', icon: '??' },
+            { name: 'tristeza', image: 'https://placehold.co/120x120/e84a5f/ffffff?text=Tristeza', icon: '??' },
+            { name: 'enojo', image: 'https://placehold.co/120x120/ff8c42/ffffff?text=Enojo', icon: '??' },
+            { name: 'sorpresa', image: 'https://placehold.co/120x120/38a7d3/ffffff?text=Sorpresa', icon: '??' }
+        ];
+        
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // Main game functions
+        function renderItems() {
+            itemsContainer.innerHTML = '';
+            shuffle([...emotionData]).forEach((item, index) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.innerHTML = `<img src="${item.image}" alt="${item.name}" class="draggable rounded-full shadow-md transition-transform hover:scale-105" draggable="true" data-emotion="${item.name}" id="item-${index}" />`;
+                itemsContainer.appendChild(itemDiv);
+            });
+        }
+
+        function showMessage(title, text, buttonText, buttonAction) {
+            messageBox.querySelector('h2').textContent = title;
+            messageBox.querySelector('p').textContent = text;
+            messageButton.textContent = buttonText;
+            messageButton.onclick = buttonAction;
+            messageBox.style.display = 'block';
+        }
+
+        function resetMainGame() {
+            messageBox.style.display = 'none';
+            correctCount = 0;
+            dropzones.forEach(zone => {
+                zone.classList.remove('correct');
+                zone.style.transform = 'rotateX(15deg) rotateY(5deg) translateZ(0)';
+                zone.innerHTML = `<span class="text-4xl mb-2">${zone.dataset.emotion === 'felicidad' ? '??' : zone.dataset.emotion === 'tristeza' ? '??' : zone.dataset.emotion === 'enojo' ? '??' : '??'}</span> ${zone.dataset.emotion.charAt(0).toUpperCase() + zone.dataset.emotion.slice(1)}`;
+            });
+            renderItems();
+        }
+
+        document.addEventListener('dragstart', (e) => {
+            if (e.target.classList.contains('draggable')) {
+                e.dataTransfer.setData('text/plain', e.target.id);
+            }
+        });
+
+        dropzones.forEach(zone => {
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                zone.classList.add('hovered');
+            });
+            zone.addEventListener('dragleave', (e) => {
+                zone.classList.remove('hovered');
+            });
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('hovered');
+                const draggedItemId = e.dataTransfer.getData('text/plain');
+                const draggedItem = document.getElementById(draggedItemId);
+                const draggedEmotion = draggedItem.getAttribute('data-emotion');
+                const targetEmotion = zone.getAttribute('data-emotion');
+
+                if (draggedEmotion === targetEmotion) {
+                    zone.classList.add('correct');
+                    zone.innerHTML = ''; // Limpia el contenido de la tarjeta
+                    zone.appendChild(draggedItem);
+                    draggedItem.style.pointerEvents = 'none'; // Deshabilita arrastrar de nuevo
+                    correctCount++;
+                    if (correctCount === emotionData.length) {
+                        setTimeout(() => showMessage(
+                            '¡Felicidades!',
+                            '¡Has clasificado todas las emociones correctamente!',
+                            'Jugar Bonus de Memoria',
+                            startBonusGame
+                        ), 500);
+                    }
+                }
+            });
+        });
+
+        // Bonus game functions
+        let firstCard = null;
+        let secondCard = null;
+        let lockBoard = false;
+        let matchesFound = 0;
+
+        function startBonusGame() {
+            messageBox.style.display = 'none';
+            mainGameDiv.style.display = 'none';
+            bonusGameDiv.style.display = 'flex';
+            
+            const memoryGrid = document.getElementById('memory-grid');
+            memoryGrid.innerHTML = '';
+            matchesFound = 0;
+            
+            const pairs = [...emotionData, ...emotionData];
+            shuffle(pairs).forEach(item => {
+                const card = document.createElement('div');
+                card.classList.add('memory-card');
+                card.setAttribute('data-emotion', item.name);
+                card.innerHTML = `
+                    <div class="face front"></div>
+                    <div class="face back text-4xl">${item.icon}</div>
+                `;
+                card.addEventListener('click', flipCard);
+                memoryGrid.appendChild(card);
+            });
+        }
+
+        function flipCard() {
+            if (lockBoard) return;
+            if (this === firstCard) return;
+
+            this.classList.add('flipped');
+
+            if (!firstCard) {
+                firstCard = this;
+                return;
+            }
+
+            secondCard = this;
+            checkForMatch();
+        }
+
+        function checkForMatch() {
+            let isMatch = firstCard.dataset.emotion === secondCard.dataset.emotion;
+            isMatch ? disableCards() : unflipCards();
+        }
+
+        function disableCards() {
+            firstCard.removeEventListener('click', flipCard);
+            secondCard.removeEventListener('click', flipCard);
+            
+            // Asegura que las cartas se mantengan volteadas
+            firstCard.classList.add('matched');
+            secondCard.classList.add('matched');
+
+            matchesFound++;
+            resetBoard();
+            if (matchesFound === emotionData.length) {
+                setTimeout(() => showMessage(
+                    '¡Lo lograste!',
+                    '¡Completaste el bonus de memoria!',
+                    'Jugar de Nuevo',
+                    () => {
+                        bonusGameDiv.style.display = 'none';
+                        mainGameDiv.style.display = 'block';
+                        resetMainGame();
+                    }
+                ), 1000);
+            }
+        }
+
+        function unflipCards() {
+            lockBoard = true;
+            setTimeout(() => {
+                firstCard.classList.remove('flipped');
+                secondCard.classList.remove('flipped');
+                resetBoard();
+            }, 1500);
+        }
+
+        function resetBoard() {
+            [firstCard, secondCard, lockBoard] = [null, null, false];
+        }
+
+        document.addEventListener('DOMContentLoaded', renderItems);
+    </script>
+</body>
+</html>
