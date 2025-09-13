@@ -25,11 +25,10 @@
             background-size: 400% 400%;
             animation: gradient-animation 15s ease infinite;
             display: flex;
-            justify-content: center;
-            align-items: center;
+            flex-direction: column;
+            justify-content: space-between;
             min-height: 100vh;
             padding: 24px;
-            overflow: hidden;
         }
 
         @keyframes gradient-animation {
@@ -50,6 +49,7 @@
             box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.15);
             backdrop-filter: blur(10px);
             perspective: 1000px;
+            margin: auto; /* Centra el contenedor principal */
         }
 
         h1 {
@@ -288,8 +288,6 @@
         let correctCount = 0;
 
         const emotionData = [
-            // Reemplaza las siguientes URLs con tus enlaces de imágenes de GitHub.
-            // Para obtener el enlace, haz clic en el botón "Raw" de tu imagen en GitHub.
             { name: 'felicidad', image: 'https://raw.githubusercontent.com/Nebulos123/appnumero2/main/felicidad.png', icon: '😊' },
             { name: 'tristeza', image: 'https://raw.githubusercontent.com/Nebulos123/appnumero2/main/tristeza.png', icon: '😔' },
             { name: 'enojo', image: 'https://raw.githubusercontent.com/Nebulos123/appnumero2/main/enojo.png', icon: '😡' },
@@ -312,6 +310,96 @@
                 itemDiv.innerHTML = `<img src="${item.image}" alt="${item.name}" class="draggable rounded-full shadow-md transition-transform hover:scale-105" draggable="true" data-emotion="${item.name}" id="item-${index}" />`;
                 itemsContainer.appendChild(itemDiv);
             });
+            // Re-bind touch events after rendering new items
+            addTouchListeners();
+        }
+        
+        function addTouchListeners() {
+            const draggables = document.querySelectorAll('.draggable');
+            draggables.forEach(item => {
+                let currentItem = null;
+                let currentTouch = null;
+
+                item.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    currentItem = e.target;
+                    currentTouch = e.changedTouches[0];
+                    currentItem.style.position = 'fixed';
+                    currentItem.style.zIndex = 1000;
+                    currentItem.style.pointerEvents = 'none';
+                    currentItem.style.transform = `scale(1.1) rotate(15deg)`;
+                    currentItem.style.left = `${currentTouch.clientX - currentItem.offsetWidth / 2}px`;
+                    currentItem.style.top = `${currentTouch.clientY - currentItem.offsetHeight / 2}px`;
+                });
+
+                item.addEventListener('touchmove', (e) => {
+                    if (!currentItem) return;
+                    currentTouch = e.changedTouches[0];
+                    currentItem.style.left = `${currentTouch.clientX - currentItem.offsetWidth / 2}px`;
+                    currentItem.style.top = `${currentTouch.clientY - currentItem.offsetHeight / 2}px`;
+
+                    // Lógica para resaltar la zona de arrastre
+                    dropzones.forEach(zone => {
+                        const rect = zone.getBoundingClientRect();
+                        if (currentTouch.clientX > rect.left && currentTouch.clientX < rect.right &&
+                            currentTouch.clientY > rect.top && currentTouch.clientY < rect.bottom) {
+                            zone.classList.add('hovered');
+                        } else {
+                            zone.classList.remove('hovered');
+                        }
+                    });
+                });
+
+                item.addEventListener('touchend', (e) => {
+                    if (!currentItem) return;
+                    currentTouch = e.changedTouches[0];
+                    currentItem.style.position = 'static'; // Regresa a su posición normal en el DOM
+
+                    const target = document.elementFromPoint(currentTouch.clientX, currentTouch.clientY);
+                    let foundDropzone = null;
+
+                    if (target) {
+                         // Busca un ancestro que sea un dropzone
+                        let checkTarget = target;
+                        while(checkTarget) {
+                            if (checkTarget.classList.contains('dropzone')) {
+                                foundDropzone = checkTarget;
+                                break;
+                            }
+                            checkTarget = checkTarget.parentElement;
+                        }
+                    }
+
+                    if (foundDropzone && foundDropzone.getAttribute('data-emotion') === currentItem.getAttribute('data-emotion')) {
+                        // Lógica de soltar (drop) exitosa
+                        foundDropzone.classList.add('correct');
+                        foundDropzone.innerHTML = '';
+                        foundDropzone.appendChild(currentItem);
+                        currentItem.style.pointerEvents = 'none'; // Deshabilita arrastrar de nuevo
+                        currentItem.style.transform = `scale(1)`;
+                        currentItem.style.position = 'static'; // Asegura que se quede en su lugar
+                        correctCount++;
+                        if (correctCount === emotionData.length) {
+                            setTimeout(() => showMessage(
+                                '¡Felicidades!',
+                                '¡Has clasificado todas las emociones correctamente!',
+                                'Jugar Bonus de Memoria',
+                                startBonusGame
+                            ), 500);
+                        }
+                    } else {
+                        // Arrastre fallido, regresa el elemento a su lugar
+                        currentItem.style.transform = `scale(1)`;
+                        currentItem.style.position = 'static';
+                        itemsContainer.appendChild(currentItem.parentElement);
+                    }
+
+                    // Limpiar
+                    currentItem = null;
+                    currentTouch = null;
+                    dropzones.forEach(zone => zone.classList.remove('hovered'));
+                });
+            });
         }
 
         function showMessage(title, text, buttonText, buttonAction) {
@@ -333,6 +421,7 @@
             renderItems();
         }
 
+        // Lógica de arrastrar y soltar para escritorio
         document.addEventListener('dragstart', (e) => {
             if (e.target.classList.contains('draggable')) {
                 e.dataTransfer.setData('text/plain', e.target.id);
@@ -357,9 +446,9 @@
 
                 if (draggedEmotion === targetEmotion) {
                     zone.classList.add('correct');
-                    zone.innerHTML = ''; // Limpia el contenido de la tarjeta
+                    zone.innerHTML = '';
                     zone.appendChild(draggedItem);
-                    draggedItem.style.pointerEvents = 'none'; // Deshabilita arrastrar de nuevo
+                    draggedItem.style.pointerEvents = 'none';
                     correctCount++;
                     if (correctCount === emotionData.length) {
                         setTimeout(() => showMessage(
@@ -463,3 +552,4 @@
     </script>
 </body>
 </html>
+
